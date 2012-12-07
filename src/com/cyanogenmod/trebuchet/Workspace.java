@@ -49,6 +49,7 @@ import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -230,6 +231,9 @@ public class Workspace extends SmoothPagedView
     private int mDragMode = DRAG_MODE_NONE;
     private int mLastReorderX = -1;
     private int mLastReorderY = -1;
+
+    private SparseArray<Parcelable> mSavedStates;
+    private final ArrayList<Integer> mRestoredPages = new ArrayList<Integer>();
 
     // These variables are used for storing the initial and final values during workspace animations
     private int mSavedScrollX;
@@ -1434,6 +1438,14 @@ public class Workspace extends SmoothPagedView
         }
 
         super.onDraw(canvas);
+
+        // Call back to LauncherModel to finish binding after the first draw
+        post(new Runnable() {
+            @Override
+            public void run() {
+                mLauncher.getModel().bindRemainingSynchronousPages();
+            }
+        });
     }
 
     boolean isDrawingBackgroundGradient() {
@@ -2382,8 +2394,17 @@ public class Workspace extends SmoothPagedView
                         }
                     }
 
-                    LauncherModel.moveItemInDatabase(mLauncher, info, container, screen, lp.cellX,
-                            lp.cellY);
+                    // No_id check required as the AllApps button doesn't have an item info id
+                    if (info.id != ItemInfo.NO_ID) {
+                        LauncherModel.moveItemInDatabase(mLauncher, info, container, screen, lp.cellX,
+                                lp.cellY);
+                    } else if (info instanceof AllAppsButtonInfo) {
+                        if (!LauncherApplication.isScreenLandscape(getContext())) {
+                            PreferencesProvider.Interface.Dock.setDefaultHotseatIcon(getContext(), lp.cellX);
+                        } else {
+                            PreferencesProvider.Interface.Dock.setDefaultHotseatIcon(getContext(), lp.cellY);
+                        }
+                    }
                 } else {
                     // If we can't find a drop location, we return the item to its original position
                     CellLayout.LayoutParams lp = (CellLayout.LayoutParams) cell.getLayoutParams();
@@ -2833,6 +2854,10 @@ public class Workspace extends SmoothPagedView
         return d.dragSource != this && isDragWidget(d);
     }
 
+    private boolean isDragAllAppsButton(DragObject d) {
+        return (d.dragInfo instanceof AllAppsButtonInfo);
+    }
+
     public void onDragOver(DragObject d) {
         // Skip drag over events while we are dragging over side pages
         if (mInScrollArea || mIsSwitchingState || mState == State.SMALL) return;
@@ -2876,7 +2901,7 @@ public class Workspace extends SmoothPagedView
             // Test to see if we are over the hotseat otherwise just use the current page
             if (mLauncher.getHotseat() != null && !isDragWidget(d)) {
                 mLauncher.getHotseat().getHitRect(r);
-                if (r.contains(d.x, d.y)) {
+                if (r.contains(d.x, d.y) || isDragAllAppsButton(d)) {
                     layout = mLauncher.getHotseat().getLayout();
                 }
             }
@@ -3482,8 +3507,8 @@ public class Workspace extends SmoothPagedView
         for (int i = 0; i < count; i++) {
             View v = cl.getShortcutsAndWidgets().getChildAt(i);
             ItemInfo info = (ItemInfo) v.getTag();
-            // Null check required as the AllApps button doesn't have an item info
-            if (info != null) {
+            // No_id check required as the AllApps button doesn't have an item info id
+            if (info.id != ItemInfo.NO_ID) {
                 LauncherModel.modifyItemInDatabase(mLauncher, info, container, screen, info.cellX,
                         info.cellY, info.spanX, info.spanY);
             }
@@ -3513,6 +3538,32 @@ public class Workspace extends SmoothPagedView
     protected void onRestoreInstanceState(Parcelable state) {
         super.onRestoreInstanceState(state);
         Launcher.setScreen(mCurrentPage);
+    }
+
+    @Override
+    protected void dispatchRestoreInstanceState(SparseArray<Parcelable> container) {
+        // We don't dispatch restoreInstanceState to our children using this code path.
+        // Some pages will be restored immediately as their items are bound immediately, and 
+        // others we will need to wait until after their items are bound.
+        mSavedStates = container;
+    }
+
+    public void restoreInstanceStateForChild(int child) {
+        if (mSavedStates != null) {
+            mRestoredPages.add(child);
+            CellLayout cl = (CellLayout) getChildAt(child);
+            cl.restoreInstanceState(mSavedStates);
+        }
+    }
+
+    public void restoreInstanceStateForRemainingPages() {
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            if (!mRestoredPages.contains(i)) {
+                restoreInstanceStateForChild(i);
+            }
+        }
+        mRestoredPages.clear();
     }
 
     @Override
