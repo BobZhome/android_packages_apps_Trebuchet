@@ -35,7 +35,7 @@ import com.cyanogenmod.trebuchet.R;
  * The linear layout used strictly for the widget/wallpaper tab of the customization tray
  */
 public class PagedViewWidget extends LinearLayout {
-    static final String TAG = "PagedViewWidgetLayout";
+    private static final String TAG = "Trebuchet.PagedViewWidgetLayout";
 
     private static boolean sDeletePreviewsWhenDetachedFromWindow = true;
 
@@ -127,6 +127,18 @@ public class PagedViewWidget extends LinearLayout {
         }
     }
 
+    public void applyFromLauncherAction(LauncherAction.Action info) {
+        mIsAppWidget = false;
+        final ImageView image = (ImageView) findViewById(R.id.widget_preview);
+        image.setContentDescription(getContext().getResources().getString(info.getString()));
+        final TextView name = (TextView) findViewById(R.id.widget_name);
+        name.setText(getContext().getResources().getString(info.getString()));
+        final TextView dims = (TextView) findViewById(R.id.widget_dims);
+        if (dims != null) {
+            dims.setText(String.format(mDimensionsFormatString, 1, 1));
+        }
+    }
+
     public int[] getPreviewSize() {
         final ImageView i = (ImageView) findViewById(R.id.widget_preview);
         int[] maxSize = new int[2];
@@ -135,7 +147,7 @@ public class PagedViewWidget extends LinearLayout {
         return maxSize;
     }
 
-    void applyPreview(FastBitmapDrawable preview, int index) {
+    void applyPreview(FastBitmapDrawable preview) {
         final PagedViewWidgetImageView image =
             (PagedViewWidgetImageView) findViewById(R.id.widget_preview);
         if (preview != null) {

@@ -40,7 +40,7 @@ import java.util.ArrayList;
 
 public class AppsCustomizeTabHost extends TabHost implements LauncherTransitionable,
         TabHost.OnTabChangeListener  {
-    static final String LOG_TAG = "AppsCustomizeTabHost";
+    private static final String TAG = "Trebuchet.AppsCustomizeTabHost";
 
     private static final String APPS_TAB_TAG = "APPS";
     private static final String WIDGETS_TAB_TAG = "WIDGETS";
@@ -72,8 +72,8 @@ public class AppsCustomizeTabHost extends TabHost implements LauncherTransitiona
             };
 
         // Preferences
-        mJoinWidgetsApps = PreferencesProvider.Interface.Drawer.getJoinWidgetsApps(context);
-        mFadeScrollingIndicator = PreferencesProvider.Interface.Drawer.Indicator.getFadeScrollingIndicator(context);
+        mJoinWidgetsApps = PreferencesProvider.Interface.Drawer.getJoinWidgetsApps();
+        mFadeScrollingIndicator = PreferencesProvider.Interface.Drawer.Indicator.getFadeScrollingIndicator();
     }
 
     /**
@@ -131,11 +131,14 @@ public class AppsCustomizeTabHost extends TabHost implements LauncherTransitiona
         tabView = (TextView) mLayoutInflater.inflate(R.layout.tab_widget_indicator, tabs, false);
         tabView.setText(label);
         tabView.setContentDescription(label);
-        tabView.setOnLongClickListener(new View.OnLongClickListener() {
-                public boolean onLongClick(View v) {
-                    return true;
-                }
-        });
+        if (getContext() instanceof Launcher) {
+            tabView.setOnLongClickListener(new View.OnLongClickListener() {
+                    public boolean onLongClick(View v) {
+                        ((Launcher) getContext()).onLongClickAppsTab(v);
+                        return true;
+                    }
+            });
+        }
         addTab(newTabSpec(APPS_TAB_TAG).setIndicator(tabView).setContent(contentFactory));
         label = getContext().getString(R.string.widgets_tab_label);
         tabView = (TextView) mLayoutInflater.inflate(R.layout.tab_widget_indicator, tabs, false);
@@ -176,11 +179,8 @@ public class AppsCustomizeTabHost extends TabHost implements LauncherTransitiona
      public boolean onInterceptTouchEvent(MotionEvent ev) {
          // If we are mid transitioning to the workspace, then intercept touch events here so we
          // can ignore them, otherwise we just let all apps handle the touch events.
-         if (mInTransition && mTransitioningToWorkspace) {
-             return true;
-         }
-         return super.onInterceptTouchEvent(ev);
-     };
+         return mInTransition && mTransitioningToWorkspace || super.onInterceptTouchEvent(ev);
+     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -268,7 +268,7 @@ public class AppsCustomizeTabHost extends TabHost implements LauncherTransitiona
                     mAnimationBuffer.setVisibility(View.VISIBLE);
                     LayoutParams p = new FrameLayout.LayoutParams(child.getMeasuredWidth(),
                             child.getMeasuredHeight());
-                    p.setMargins((int) child.getLeft(), (int) child.getTop(), 0, 0);
+                    p.setMargins(child.getLeft(), child.getTop(), 0, 0);
                     mAnimationBuffer.addView(child, p);
 
                 // Toggle the new content

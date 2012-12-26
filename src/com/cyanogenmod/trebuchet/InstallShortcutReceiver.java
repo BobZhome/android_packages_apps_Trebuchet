@@ -137,8 +137,8 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
 
             // Try adding to the workspace screens incrementally, starting at the default or center
             // screen and alternating between +1, -1, +2, -2, etc. (using ~ ceil(i/2f)*(-1)^(i-1))
-            final int screenCount = PreferencesProvider.Interface.Homescreen.getNumberHomescreens(context);
-            final int screenDefault = PreferencesProvider.Interface.Homescreen.getDefaultHomescreen(context, screenCount / 2);
+            final int screenCount = PreferencesProvider.Interface.Homescreen.getNumberHomescreens();
+            final int screenDefault = PreferencesProvider.Interface.Homescreen.getDefaultHomescreen(screenCount / 2);
             final int screen = (screenDefault >= screenCount) ? screenCount / 2 : screenDefault;
 
             for (int i = 0; i <= (2 * screenCount) + 1 && !found; ++i) {
@@ -190,7 +190,7 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
                         newApps = sharedPrefs.getStringSet(NEW_APPS_LIST_KEY, newApps);
                     }
                     synchronized (newApps) {
-                        newApps.add(intent.toUri(0).toString());
+                        newApps.add(intent.toUri(0));
                     }
                     final Set<String> savedNewApps = newApps;
                     new Thread("setNewAppsThread") {
@@ -231,10 +231,8 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
         final int yCount = LauncherModel.getCellCountY();
         boolean[][] occupied = new boolean[xCount][yCount];
 
-        ItemInfo item = null;
         int cellX, cellY, spanX, spanY;
-        for (int i = 0; i < items.size(); ++i) {
-            item = items.get(i);
+        for (ItemInfo item : items) {
             if (item.container == LauncherSettings.Favorites.CONTAINER_DESKTOP) {
                 if (item.screen == screen) {
                     cellX = item.cellX;

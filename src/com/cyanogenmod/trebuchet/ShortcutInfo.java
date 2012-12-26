@@ -17,6 +17,7 @@
 package com.cyanogenmod.trebuchet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import android.content.ComponentName;
 import android.content.ContentValues;
@@ -56,6 +57,11 @@ class ShortcutInfo extends ItemInfo {
      * The application icon.
      */
     private Bitmap mIcon;
+
+    /**
+     * Title change listener
+     */
+    private ShortcutListener mListener;
 
     ShortcutInfo() {
         itemType = LauncherSettings.BaseLauncherColumns.ITEM_TYPE_SHORTCUT;
@@ -119,6 +125,17 @@ class ShortcutInfo extends ItemInfo {
         itemType = LauncherSettings.BaseLauncherColumns.ITEM_TYPE_APPLICATION;
     }
 
+    public void setTitle(CharSequence title) {
+        this.title = title;
+        if (mListener != null) {
+            mListener.onTitleChanged(title);
+        }
+    }
+
+    void setListener(ShortcutListener listener) {
+        mListener = listener;
+    }
+
     @Override
     void onAddToDatabase(ContentValues values) {
         super.onAddToDatabase(values);
@@ -153,7 +170,7 @@ class ShortcutInfo extends ItemInfo {
         return "ShortcutInfo(title=" + title.toString() + "intent=" + intent + "id=" + this.id
                 + " type=" + this.itemType + " container=" + this.container + " screen=" + screen
                 + " cellX=" + cellX + " cellY=" + cellY + " spanX=" + spanX + " spanY=" + spanY
-                + " dropPos=" + dropPos + ")";
+                + " dropPos=" + Arrays.toString(dropPos) + ")";
     }
 
     public static void dumpShortcutInfoList(String tag, String label,
@@ -163,6 +180,10 @@ class ShortcutInfo extends ItemInfo {
             Log.d(tag, "   title=\"" + info.title + " icon=" + info.mIcon
                     + " customIcon=" + info.customIcon);
         }
+    }
+
+    interface ShortcutListener {
+        public void onTitleChanged(CharSequence title);
     }
 }
 
