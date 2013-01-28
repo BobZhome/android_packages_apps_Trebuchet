@@ -138,8 +138,7 @@ public class CellLayout extends ViewGroup {
     private TimeInterpolator mEaseOutInterpolator;
     private ShortcutAndWidgetContainer mShortcutsAndWidgets;
 
-    private boolean mIsHotseat = false;
-    private float mHotseatScale = 1f;
+    private float mChildrenScale = 1f;
 
     public static final int MODE_DRAG_OVER = 0;
     public static final int MODE_ON_DROP = 1;
@@ -190,8 +189,8 @@ public class CellLayout extends ViewGroup {
         mWidthGap = mOriginalWidthGap = a.getDimensionPixelSize(R.styleable.CellLayout_widthGap, 0);
         mHeightGap = mOriginalHeightGap = a.getDimensionPixelSize(R.styleable.CellLayout_heightGap, 0);
         mMaxGap = a.getDimensionPixelSize(R.styleable.CellLayout_maxGap, 0);
-        mCountX = LauncherModel.getCellCountX();
-        mCountY = LauncherModel.getCellCountY();
+        mCountX = LauncherModel.getWorkspaceCellCountX();
+        mCountY = LauncherModel.getWorkspaceCellCountY();
         mOccupied = new boolean[mCountX][mCountY];
         mTmpOccupied = new boolean[mCountX][mCountY];
         mPreviousReorderDirection[0] = INVALID_DIRECTION;
@@ -202,8 +201,6 @@ public class CellLayout extends ViewGroup {
         setAlwaysDrawnWithCacheEnabled(false);
 
         final Resources res = getResources();
-        mHotseatScale = (res.getInteger(R.integer.hotseat_item_scale_percentage) / 100f);
-
         mNormalBackground = res.getDrawable(R.drawable.homescreen_blue_normal_holo);
         mActiveGlowBackground = res.getDrawable(R.drawable.homescreen_blue_strong_holo);
 
@@ -284,8 +281,8 @@ public class CellLayout extends ViewGroup {
         mShortcutsAndWidgets = new ShortcutAndWidgetContainer(context);
 
         if (!LauncherApplication.isScreenLarge()){
-            mCellWidth = (mCellWidth * 4) / mCountX;
-            mCellHeight = (mCellHeight * 4) / mCountY;
+            mCellWidth = (mCellWidth * res.getInteger(R.integer.default_cell_count_x)) / mCountX;
+            mCellHeight = (mCellHeight * res.getInteger(R.integer.default_cell_count_y)) / mCountY;
         }
 
         mShortcutsAndWidgets.setCellDimensions(mCellWidth, mCellHeight, mWidthGap, mHeightGap);
@@ -326,8 +323,12 @@ public class CellLayout extends ViewGroup {
         mShortcutsAndWidgets.buildLayer();
     }
 
+    public void setChildrenScale(float childrenScale) {
+        mChildrenScale = childrenScale;
+    }
+
     public float getChildrenScale() {
-        return mIsHotseat ? mHotseatScale : 1.0f;
+        return mChildrenScale;
     }
 
     public void setGridSize(int x, int y) {
@@ -609,24 +610,15 @@ public class CellLayout extends ViewGroup {
         return mCountY;
     }
 
-    public void setIsHotseat(boolean isHotseat) {
-        mIsHotseat = isHotseat;
-    }
-
     public boolean addViewToCellLayout(View child, int index, int childId, LayoutParams params,
             boolean markCells) {
         final LayoutParams lp = params;
 
-        // Hotseat icons - remove text
         if (child instanceof BubbleTextView) {
             BubbleTextView bubbleChild = (BubbleTextView) child;
 
             Resources res = getResources();
-            if (mIsHotseat) {
-                bubbleChild.setTextColor(res.getColor(android.R.color.transparent));
-            } else {
-                bubbleChild.setTextColor(res.getColor(R.color.workspace_icon_text_color));
-            }
+            bubbleChild.setTextColor(res.getColor(R.color.workspace_icon_text_color));
         }
 
         child.setScaleX(getChildrenScale());

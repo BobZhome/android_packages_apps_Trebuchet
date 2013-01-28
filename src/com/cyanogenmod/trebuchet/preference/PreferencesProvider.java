@@ -82,9 +82,6 @@ public final class PreferencesProvider {
             public static boolean getShowSearchBar() {
                 return getBoolean("ui_homescreen_general_search", true);
             }
-            public static boolean getResizeAnyWidget() {
-                return getBoolean("ui_homescreen_general_resize_any_widget", false);
-            }
             public static boolean getHideIconLabels() {
                 return getBoolean("ui_homescreen_general_hide_icon_labels", false);
             }
@@ -108,8 +105,8 @@ public final class PreferencesProvider {
                 public static boolean getScrollWallpaper() {
                     return getBoolean("ui_homescreen_scrolling_scroll_wallpaper", true);
                 }
-                public static boolean getWallpaperHack() {
-                    return getBoolean("ui_homescreen_scrolling_wallpaper_hack", false);
+                public static boolean getWallpaperHack(boolean def) {
+                    return getBoolean("ui_homescreen_scrolling_wallpaper_hack", def);
                 }
                 public static int getWallpaperSize() {
                     return getInt("ui_homescreen_scrolling_wallpaper_size", 2);
@@ -179,6 +176,9 @@ public final class PreferencesProvider {
         }
 
         public static class Dock {
+            public static boolean getShowDock() {
+                return getBoolean("ui_dock_enabled", true);
+            }
             public static int getNumberPages() {
                 return getInt("ui_dock_pages", 1);
             }
@@ -187,6 +187,9 @@ public final class PreferencesProvider {
             }
             public static int getNumberIcons(int def) {
                 return getInt("ui_dock_icons", def);
+            }
+            public static int getIconScale(int def) {
+                return getInt("ui_dock_icon_scale", def);
             }
             public static boolean getShowDivider() {
                 return getBoolean("ui_dock_divider", true);
